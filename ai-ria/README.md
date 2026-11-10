@@ -2,9 +2,9 @@
 
 **AI RIA — Git for AI context and memory.** An intelligence layer for AI coding agents.
 
-[Repository](https://github.com/maribostashvili-93/AI-ria-) ·
-[Changelog](https://github.com/maribostashvili-93/AI-ria-/blob/main/CHANGELOG.md) ·
-[Contributing](https://github.com/maribostashvili-93/AI-ria-/blob/main/CONTRIBUTING.md) ·
+[Repository](https://github.com/maribostashvili-93/ai-ria) ·
+[Changelog](https://github.com/maribostashvili-93/ai-ria/blob/main/CHANGELOG.md) ·
+[Contributing](https://github.com/maribostashvili-93/ai-ria/blob/main/CONTRIBUTING.md) ·
 MIT · Node.js ≥ 20
 
 Not another agent: a CLI + MCP server that enters an existing project, compresses its context, keeps persistent agent memory, and builds handoffs and agent packs — so the next AI agent (Claude, Cursor, Codex, …) starts fully informed at a fraction of the token cost. All outputs land in the target repo's **`.ria/`** folder, ready for any agent to consume.
@@ -138,7 +138,7 @@ pnpm run verify    # typecheck + lint + tests
 pnpm run build
 ```
 
-See [CONTRIBUTING.md](https://github.com/maribostashvili-93/AI-ria-/blob/main/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/maribostashvili-93/ai-ria/blob/main/CONTRIBUTING.md).
 
 ## License
 

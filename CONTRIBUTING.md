@@ -6,8 +6,8 @@ agents — everything it produces lands in a project's `.ria/` folder.
 ## Getting set up
 
 ```bash
-git clone https://github.com/maribostashvili-93/AI-ria-.git
-cd AI-ria-/ai-ria
+git clone https://github.com/maribostashvili-93/ai-ria.git
+cd ai-ria/ai-ria
 pnpm install
 pnpm run verify        # typecheck + lint + tests
 ```

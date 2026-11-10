@@ -142,5 +142,5 @@ First public release.
   Studio "About" page — all now read a single source.
 - Truncated final row in the CLI reference table.
 
-[Unreleased]: https://github.com/maribostashvili-93/AI-ria-/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/maribostashvili-93/AI-ria-/releases/tag/v0.2.0
+[Unreleased]: https://github.com/maribostashvili-93/ai-ria/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/maribostashvili-93/ai-ria/releases/tag/v0.2.0

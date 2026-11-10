@@ -6,7 +6,7 @@
   <p><strong>Runtime Intelligence for AI Agents</strong></p>
 
   <p>
-    <a href="https://github.com/maribostashvili-93/AI-ria-/actions/workflows/ci.yml"><img src="https://github.com/maribostashvili-93/AI-ria-/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://github.com/maribostashvili-93/ai-ria/actions/workflows/ci.yml"><img src="https://github.com/maribostashvili-93/ai-ria/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
     <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen" alt="Node >= 20" />
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
     <img src="https://img.shields.io/badge/tests-136%20passing-brightgreen" alt="136 tests" />
@@ -68,8 +68,8 @@ bookkeeping, and it runs in seconds.
 Requires **Node.js ≥ 20**.
 
 ```bash
-git clone https://github.com/maribostashvili-93/AI-ria-.git
-cd AI-ria-/ai-ria
+git clone https://github.com/maribostashvili-93/ai-ria.git
+cd ai-ria/ai-ria
 pnpm install
 ```
 
