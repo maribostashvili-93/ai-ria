@@ -5,14 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "Mariam Bostashvili",
-  "homepage": "https://github.com/maribostashvili-93/AI-ria-#readme",
+  "homepage": "https://github.com/maribostashvili-93/ai-ria#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maribostashvili-93/AI-ria-.git",
+    "url": "git+https://github.com/maribostashvili-93/ai-ria.git",
     "directory": "ai-ria"
   },
   "bugs": {
-    "url": "https://github.com/maribostashvili-93/AI-ria-/issues"
+    "url": "https://github.com/maribostashvili-93/ai-ria/issues"
   },
   "engines": {
     "node": ">=20"
