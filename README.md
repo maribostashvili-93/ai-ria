@@ -6,6 +6,8 @@
   <p><strong>Runtime Intelligence for AI Agents</strong></p>
 
   <p>
+    <a href="https://www.npmjs.com/package/ai-ria"><img src="https://img.shields.io/npm/v/ai-ria" alt="npm version" /></a>
+    <a href="https://www.npmjs.com/package/ai-ria"><img src="https://img.shields.io/npm/dm/ai-ria" alt="npm downloads" /></a>
     <a href="https://github.com/maribostashvili-93/ai-ria/actions/workflows/ci.yml"><img src="https://github.com/maribostashvili-93/ai-ria/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
     <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen" alt="Node >= 20" />
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
@@ -65,7 +67,20 @@ bookkeeping, and it runs in seconds.
 
 ## Quick start
 
-Requires **Node.js ≥ 20**.
+Requires **Node.js ≥ 20**. Run it on any project — no install, no API key:
+
+```bash
+npx ai-ria analyze .
+```
+
+Or install the `ria` command globally:
+
+```bash
+npm install -g ai-ria
+ria analyze ./my-project
+```
+
+### From source
 
 ```bash
 git clone https://github.com/maribostashvili-93/ai-ria.git

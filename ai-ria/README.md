@@ -19,31 +19,35 @@ Compressed Agent Pack  (.ria/agent-pack/AGENT_PACK.md)
     Next Agent
 ```
 
-## Core Workflow
+## Install
+
+Run it without installing (Node.js ≥ 20):
 
 ```bash
-pnpm ria analyze <project>                                    # repo intelligence → .ria/
-pnpm ria context build <project>                              # compressed context + token report
-pnpm ria memory compress-conversation <project> ./conv.txt    # conversation → durable memory
-pnpm ria handoff create <project> --task "Improve checkout"   # handoff for the next agent
-pnpm ria design-pack <project>                                # design rules for UI agents
-pnpm ria agent-pack <project>                                 # THE file the next agent reads
-pnpm ria pack compact <project>                               # budgeted export (claude|cursor|codex|compact)
+npx ai-ria analyze ./my-project
 ```
 
-The next agent reads only `.ria/agent-pack/AGENT_PACK.md`. If it needs more, it reads `.ria/memory/deep-memory.md`.
-
-## Install
+Or install the `ria` command globally:
 
 ```bash
 npm install -g ai-ria     # then: ria analyze ./my-project
 ```
 
-Or run it without installing:
+## Core Workflow
 
 ```bash
-npx ai-ria analyze ./my-project
+ria analyze <project>                                    # repo intelligence → .ria/
+ria context build <project>                              # compressed context + token report
+ria memory compress-conversation <project> ./conv.txt    # conversation → durable memory
+ria handoff create <project> --task "Improve checkout"   # handoff for the next agent
+ria design-pack <project>                                # design rules for UI agents
+ria agent-pack <project>                                 # THE file the next agent reads
+ria pack compact <project>                               # budgeted export (claude|cursor|codex|compact)
 ```
+
+From a clone of the repo, prefix each command with `pnpm` (`pnpm ria analyze <project>`).
+
+The next agent reads only `.ria/agent-pack/AGENT_PACK.md`. If it needs more, it reads `.ria/memory/deep-memory.md`.
 
 AI RIA makes **no LLM calls** — no API key, no inference cost. It is static
 analysis plus bookkeeping, and every run is reproducible.
