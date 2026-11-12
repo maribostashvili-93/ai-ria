@@ -1,0 +1,16 @@
+{
+  "name": "ai-ria",
+  "description": "AI RIA for Claude Code: your repository compressed into a context pack the agent reads at session start, plus memory and handoffs.",
+  "owner": {
+    "name": "Mariam Bostashvili",
+    "url": "https://github.com/maribostashvili-93"
+  },
+  "plugins": [
+    {
+      "name": "ai-ria",
+      "source": "./claude-plugin",
+      "category": "productivity",
+      "tags": ["context", "memory", "handoff", "tokens", "mcp"]
+    }
+  ]
+}
