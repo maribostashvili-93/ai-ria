@@ -1,5 +1,5 @@
 {
-  "description": "AI RIA: load this repository's context pack into the session",
+  "description": "AI RIA: load this repository's context pack at session start, record a handoff at session end",
   "hooks": {
     "SessionStart": [
       {
@@ -10,6 +10,18 @@
             "command": "node",
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/session-start.mjs"],
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/session-end.mjs"],
+            "timeout": 15
           }
         ]
       }

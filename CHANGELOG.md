@@ -17,6 +17,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   silent exit so a session is never blocked. `AI_RIA_CLI` points the hook at a
   local build for development. On dubinc/dub the hook adds 5,667 characters in
   about 0.4 s.
+- **Plugin: SessionEnd handoff and skills.** At session end the plugin records
+  a handoff named after the session's first real request, read best-effort from
+  the transcript, and skips it when a handoff was already written during the
+  session. Skills `/ai-ria:pack`, `/ai-ria:handoff`, `/ai-ria:security` and
+  `/ai-ria:remember` use the MCP tools, or `scripts/ria.mjs`, which runs the
+  pinned ai-ria version. On Windows, npx runs through npm's `npx-cli.js` with no
+  shell, so text taken from a prompt can't reach `cmd.exe`.
 - **Budgeted agent pack.** `ria agent-pack --max-chars <n>` also writes
   `.ria/agent-pack/AGENT_PACK_BRIEF.md`, fitted to `n` characters, and
   `--print` writes the pack to stdout and nothing else, for hooks. Claude Code
