@@ -103,8 +103,124 @@ export function agentPackToMarkdown(data: AgentPackData): string {
   return lines.join("\n");
 }
 
+/** Sections at or below this priority are truncated to fit instead of dropped. */
+const KEEP_PRIORITY = 2;
+/** Smallest useful slice of a section; anything shorter is dropped instead. */
+const MIN_SECTION_CHARS = 200;
+const FULL_PACK_PATH = ".ria/agent-pack/AGENT_PACK.md";
+
+export interface FittedAgentPack {
+  markdown: string;
+  /** Sections cut short to fit. */
+  truncated: string[];
+  /** Sections left out entirely. */
+  dropped: string[];
+}
+
+/** Cut text at a line boundary so it is at most `max` characters. */
+function cutToLines(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  const lastBreak = slice.lastIndexOf("\n");
+  return (lastBreak > max / 2 ? slice.slice(0, lastBreak) : slice).trimEnd();
+}
+
+/**
+ * AGENT_PACK.md within a character budget.
+ *
+ * Hosts cap injected context (Claude Code's SessionStart `additionalContext`
+ * is 10,000 characters), while the full pack of a large repo runs to tens of
+ * kilobytes. Sections go in by priority; a high-priority section that does
+ * not fit is cut short, a low-priority one is dropped, and the pack ends by
+ * naming what was left out and where the full version lives — so the agent
+ * knows it is reading a summary, not the whole picture.
+ */
+export function fitAgentPack(data: AgentPackData, maxChars: number): FittedAgentPack {
+  const truncated: string[] = [];
+  const dropped: string[] = [];
+  const header = [
+    "# AGENT PACK (brief)",
+    "",
+    `Generated: ${data.generatedAt} · budget ${maxChars} characters · full pack: \`${FULL_PACK_PATH}\``,
+    "",
+    "",
+  ].join("\n");
+  const footerFor = (t: string[], d: string[]) => {
+    if (!t.length && !d.length) return "";
+    const parts = [
+      t.length ? `shortened: ${t.join(", ")}` : "",
+      d.length ? `left out: ${d.join(", ")}` : "",
+    ].filter(Boolean);
+    return `\n## Not included\n\n${parts.join("; ")}. The full pack is \`${FULL_PACK_PATH}\`.\n`;
+  };
+  // Reserve room for the longest footer this pack could need: every name listed twice.
+  const names = data.sections.map((s) => s.name);
+  const worstFooter = footerFor(names, names).length;
+  const ELLIPSIS = "\n…\n\n";
+
+  const ordered = [...data.sections].sort((a, b) => a.priority - b.priority).map((s) => {
+    const title = `## ${s.name}\n\n`;
+    const body = demoteHeadings(s.content, 2);
+    return { s, title, body, full: `${title}${body}\n\n` };
+  });
+
+  // Important sections share the budget fairly: the short ones go in whole, the
+  // long ones split what is left equally. Without this, one huge section (the
+  // project summary of a big monorepo) used the whole budget and pushed the
+  // handoff out.
+  let available = maxChars - header.length - worstFooter;
+  const allotment = new Map<string, number>();
+  const keep = ordered.filter((o) => o.s.priority <= KEEP_PRIORITY).sort((a, b) => a.full.length - b.full.length);
+  keep.forEach((o, i) => {
+    const share = Math.floor(available / (keep.length - i));
+    const give = Math.min(o.full.length, share);
+    allotment.set(o.s.name, give);
+    available -= give;
+  });
+
+  const blocks: string[] = [];
+  for (const o of ordered) {
+    if (o.s.priority <= KEEP_PRIORITY) {
+      const give = allotment.get(o.s.name) ?? 0;
+      if (give >= o.full.length) {
+        blocks.push(o.full);
+        continue;
+      }
+      const bodyRoom = give - o.title.length - ELLIPSIS.length;
+      if (bodyRoom >= MIN_SECTION_CHARS) {
+        blocks.push(`${o.title}${cutToLines(o.body, bodyRoom)}${ELLIPSIS}`);
+        truncated.push(o.s.name);
+      } else {
+        dropped.push(o.s.name);
+        available += give;
+      }
+      continue;
+    }
+    // Lower-priority sections only use what the important ones left over.
+    if (o.full.length <= available) {
+      blocks.push(o.full);
+      available -= o.full.length;
+    } else {
+      dropped.push(o.s.name);
+    }
+  }
+
+  let markdown = header + blocks.join("") + footerFor(truncated, dropped);
+  // The reservation above makes this unreachable in practice; keep the budget a hard limit regardless.
+  if (markdown.length > maxChars) markdown = cutToLines(markdown, maxChars);
+  return { markdown, truncated, dropped };
+}
+
 /** `ria agent-pack` — write .ria/agent-pack/AGENT_PACK.md + agent-pack.json. */
-export async function buildAgentPack(root: string): Promise<{ data: AgentPackData; files: string[] }> {
+export interface BuildAgentPackOptions {
+  /** Also write AGENT_PACK_BRIEF.md, fitted to this many characters. */
+  maxChars?: number;
+}
+
+export async function buildAgentPack(
+  root: string,
+  options: BuildAgentPackOptions = {},
+): Promise<{ data: AgentPackData; files: string[]; markdown: string; brief?: FittedAgentPack }> {
   const data = await collectAgentPack(root);
   const markdown = agentPackToMarkdown(data);
   const files = [
@@ -116,6 +232,11 @@ export async function buildAgentPack(root: string): Promise<{ data: AgentPackDat
       missing: data.missing,
     }, null, 2)),
   ];
+  let brief: FittedAgentPack | undefined;
+  if (options.maxChars !== undefined) {
+    brief = fitAgentPack(data, options.maxChars);
+    files.push(await writeRiaFile(root, "agent-pack/AGENT_PACK_BRIEF.md", brief.markdown));
+  }
 
   // Token accounting: every pack generation lands in the ledger.
   let rawTokens = data.tokens;
@@ -128,5 +249,5 @@ export async function buildAgentPack(root: string): Promise<{ data: AgentPackDat
   const { recordPackGeneration } = await import("../tokens/token-ledger.js");
   await recordPackGeneration(root, { agent: "any", task: "agent pack build", pack: "AGENT_PACK.md", rawTokens, compressedTokens: estimateTokens(markdown) });
 
-  return { data, files };
+  return { data, files, markdown, brief };
 }

@@ -12,4 +12,6 @@ export { listSkills, getSkill, runSkill } from "./skills/registry.js";
 export { FigmaClient, extractFromFigmaFile, figmaSummaryMarkdown, rgbToHex } from "./figma/client.js";
 export { compareFigmaToCode, diffToMarkdown } from "./figma/compare.js";
 export { toJson } from "./output/json.js";
+export { collectAgentPack, agentPackToMarkdown, fitAgentPack, buildAgentPack } from "./agentpack/agent-pack.js";
+export type { AgentPackData, AgentPackSection, FittedAgentPack, BuildAgentPackOptions } from "./agentpack/agent-pack.js";
 export * from "./output/markdown.js";

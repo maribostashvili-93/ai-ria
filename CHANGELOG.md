@@ -6,6 +6,30 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Budgeted agent pack.** `ria agent-pack --max-chars <n>` also writes
+  `.ria/agent-pack/AGENT_PACK_BRIEF.md`, fitted to `n` characters, and
+  `--print` writes the pack to stdout and nothing else, for hooks. Claude Code
+  accepts at most 10,000 characters of SessionStart context; dub's full pack was
+  52.9 KB. Important sections (project, handoff, memory, security warnings)
+  share the budget, so a huge project summary no longer pushes the handoff out;
+  lower-priority sections use what is left; the brief ends by naming what it
+  shortened or left out. `fitAgentPack` and `buildAgentPack` are exported.
+
+### Changed
+
+- **Long route and dependency lists are capped in summaries.** The summary line
+  listed every route: 456 routes made one 8,600-character line on dubinc/dub.
+  Summaries now list the first 40 routes and 30 dependencies and point to
+  `.ria/repo-map.json` for the rest. On dub the context pack drops from ~13.5k
+  to ~8.4k tokens and the full `AGENT_PACK.md` from 52.9 KB to 12.4 KB.
+
+### Fixed
+
+- The MCP server reported version `0.2.0` whatever was installed; it now reports
+  the package version.
+
 ## [0.2.1] — 2026-11-13
 
 ### Fixed
