@@ -22,6 +22,16 @@ export type Conventions = z.infer<typeof ConventionsSchema>;
 export const FrameworkSchema = z.enum(["Next.js", "React", "Vue", "Nuxt", "Astro", "Svelte", "Plain HTML", "Node", "Unknown"]);
 export type Framework = z.infer<typeof FrameworkSchema>;
 
+/** One package of a monorepo (`apps/web`, `packages/ui`, …). */
+export const WorkspaceSchema = z.object({
+  path: z.string(),
+  name: z.string().optional(),
+  framework: FrameworkSchema,
+  routes: z.number().int().nonnegative(),
+  components: z.number().int().nonnegative(),
+});
+export type Workspace = z.infer<typeof WorkspaceSchema>;
+
 /** Structured repository intelligence map (v0.1). */
 export const RepoMapSchema = z.object({
   root: z.string(),
@@ -42,6 +52,10 @@ export const RepoMapSchema = z.object({
   configFiles: z.array(z.string()),
   importantFiles: z.array(z.string()),
   conventions: ConventionsSchema,
+  /** Monorepo packages; absent for single-package repositories. */
+  workspaces: z.array(WorkspaceSchema).optional(),
+  /** The workspace whose framework and routes describe the repo (monorepos only). */
+  primaryWorkspace: z.string().optional(),
   files: z.array(FileInfoSchema),
 });
 export type RepoMap = z.infer<typeof RepoMapSchema>;

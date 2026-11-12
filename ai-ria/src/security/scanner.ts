@@ -11,18 +11,32 @@ interface Rule {
   message: string;
 }
 
+/**
+ * Hosts that only resolve on the developer's machine. Credentials and plain
+ * http to these are local dev defaults (docker-compose, `.env.example` hints),
+ * not leaks — flagging them buried real findings under noise.
+ */
+const LOCAL_HOST = String.raw`(?:(?:[\w-]+\.)*localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?=[:/'"\s]|$)`;
+
+/**
+ * XML namespace identifiers are written as http:// URIs by spec
+ * (`xmlns="http://www.w3.org/2000/svg"`) and are never fetched. Every inline
+ * SVG in a React app matched the insecure-URL rule before this list.
+ */
+const XML_NAMESPACE_HOST = String.raw`(?:www\.)?w3\.org/|schemas\.[\w.-]+/|purl\.org/|ns\.adobe\.com/|xmlns\.com/`;
+
 /** Defensive detection rules: secrets and unsafe patterns. Scan-and-report only. */
 export const RULES: Rule[] = [
   { id: "aws-access-key", severity: "critical", pattern: /\bAKIA[0-9A-Z]{16}\b/, message: "Possible AWS access key ID committed to source" },
   { id: "private-key-block", severity: "critical", pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY/, message: "Private key material in source" },
   { id: "hardcoded-secret", severity: "high", pattern: /(?:api[_-]?key|secret|password|auth[_-]?token)\s*[:=]\s*["'][^"']{8,}["']/i, message: "Possible hardcoded secret — move to environment variables" },
   { id: "eval-usage", severity: "medium", pattern: /\beval\s*\(/, message: "eval() usage — code injection risk" }, // ria-security-ignore
-  { id: "insecure-http-url", severity: "low", pattern: /["']http:\/\/(?!localhost|127\.0\.0\.1)[^"']+["']/, message: "Insecure http:// URL — prefer https://" },
+  { id: "insecure-http-url", severity: "low", pattern: new RegExp(String.raw`["']http://(?!${LOCAL_HOST}|${XML_NAMESPACE_HOST})[^"']+["']`), message: "Insecure http:// URL — prefer https://" },
   { id: "curl-pipe-shell", severity: "critical", pattern: /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba|z)?sh\b/, message: "Remote script piped into a shell — supply-chain risk" },
   { id: "dangerous-rm", severity: "high", pattern: /\brm\s+-rf\s+(?:\/(?!tmp)|~|\$HOME)/, message: "Destructive rm -rf on home or filesystem root" },
   { id: "world-writable-chmod", severity: "medium", pattern: /\bchmod\s+(?:-R\s+)?777\b/, message: "chmod 777 — world-writable permissions" }, // ria-security-ignore
   { id: "sql-role-password", severity: "critical", pattern: /\b(?:encrypted\s+)?password\s+'[^']{6,}'/i, message: "Database role password in a SQL file — rotate it and move it to a secret store" },
-  { id: "connection-string-credentials", severity: "critical", pattern: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:@/'"]+:[^\s@/'"]+@/i, message: "Credentials embedded in a connection URL — move them to environment variables" },
+  { id: "connection-string-credentials", severity: "critical", pattern: new RegExp(String.raw`\b[a-z][a-z0-9+.-]*://[^\s:@/'"]+:[^\s@/'"]+@(?!${LOCAL_HOST})`, "i"), message: "Credentials embedded in a connection URL — move them to environment variables" },
 ];
 
 /** Prompt-injection patterns checked only in agent-instruction files. */
