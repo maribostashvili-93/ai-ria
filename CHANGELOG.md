@@ -8,6 +8,15 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Claude Code plugin** (`claude-plugin/`, marketplace at the repo root).
+  Install with `/plugin marketplace add maribostashvili-93/ai-ria` and
+  `/plugin install ai-ria@ai-ria`. A SessionStart hook adds the project's brief
+  agent pack (under Claude Code's 10,000-character limit) to every session,
+  resume, `/clear` and compaction, and the plugin registers the ai-ria MCP
+  server. Projects without `.ria/` are left alone, and any failure ends in a
+  silent exit so a session is never blocked. `AI_RIA_CLI` points the hook at a
+  local build for development. On dubinc/dub the hook adds 5,667 characters in
+  about 0.4 s.
 - **Budgeted agent pack.** `ria agent-pack --max-chars <n>` also writes
   `.ria/agent-pack/AGENT_PACK_BRIEF.md`, fitted to `n` characters, and
   `--print` writes the pack to stdout and nothing else, for hooks. Claude Code

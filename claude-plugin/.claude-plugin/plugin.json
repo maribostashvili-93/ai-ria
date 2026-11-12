@@ -1,0 +1,14 @@
+{
+  "name": "ai-ria",
+  "displayName": "AI RIA",
+  "version": "0.3.0",
+  "description": "Loads a compressed context pack of your repository into every Claude Code session, and exposes AI RIA's analysis, memory and handoff tools over MCP.",
+  "author": {
+    "name": "Mariam Bostashvili",
+    "url": "https://github.com/maribostashvili-93"
+  },
+  "homepage": "https://github.com/maribostashvili-93/ai-ria#readme",
+  "repository": "https://github.com/maribostashvili-93/ai-ria",
+  "license": "MIT",
+  "keywords": ["context", "memory", "handoff", "tokens", "mcp", "design-tokens"]
+}
