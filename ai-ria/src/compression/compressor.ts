@@ -33,6 +33,10 @@ export function compressRepoMap(map: RepoMap): CompressedContext {
   const lines: string[] = [];
   lines.push(`# Repo context: ${map.root.split(/[\\/]/).pop()}`);
   lines.push(`${map.framework} project. ${map.fileCount} files, ${map.totalLines} lines.`);
+  if (map.workspaces?.length) {
+    const listed = map.workspaces.map((w) => `${w.path} (${w.framework}${w.routes ? `, ${w.routes} routes` : ""})`);
+    lines.push(`Monorepo, main app ${map.primaryWorkspace ?? "unknown"}. Workspaces: ${listed.slice(0, 8).join(", ")}${listed.length > 8 ? ", …" : ""}.`);
+  }
 
   const langs = topEntries(map.languages, 5).map(([l, c]) => `${l} (${c})`).join(", ");
   if (langs) lines.push(`Languages: ${langs}.`);

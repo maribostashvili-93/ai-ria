@@ -103,7 +103,7 @@ program
     done(files);
     console.log(`
 Checklist:
-  framework:          ${map.framework}
+  framework:          ${map.framework}${map.primaryWorkspace ? ` (${map.primaryWorkspace}, ${map.workspaces?.length ?? 0} workspaces)` : ""}
   routes:             ${map.routes.length}
   components:         ${map.components.length}
   styles:             ${map.styles.length}

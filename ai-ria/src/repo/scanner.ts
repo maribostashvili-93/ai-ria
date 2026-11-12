@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { RepoMap, RepoMapSchema, FileInfo, Conventions, Framework } from "../core/types.js";
+import { RepoMap, RepoMapSchema, FileInfo, Conventions, Framework, Workspace } from "../core/types.js";
 import { isFixturePath } from "../core/fixtures.js";
 
 const IGNORE_DIRS = new Set([
@@ -152,15 +152,103 @@ export function detectRoutes(files: FileInfo[]): string[] {
   return [...routes].sort();
 }
 
+/**
+ * Directories that hold UI building blocks. `components/` is only one
+ * convention: shadcn-style and monorepo projects keep them in `ui/`
+ * (`apps/web/ui/`, `packages/ui/`) with kebab-case file names, which the
+ * PascalCase fallback below cannot see.
+ */
+const COMPONENT_DIRS = /(^|\/)(components?|ui|widgets|primitives|elements)\//i;
+/** Storybook stories and similar sidecar files are not components. */
+const COMPONENT_SIDECAR = /\.(stories|story|test|spec)\.[a-z]+$/i;
+
 export function detectComponents(files: FileInfo[]): string[] {
   return files
     .filter((f) => {
       if (![".tsx", ".jsx", ".vue", ".svelte"].includes(f.ext)) return false;
+      if (isFixturePath(f.path) || COMPONENT_SIDECAR.test(f.path)) return false;
       const base = path.basename(f.path, f.ext);
-      return /(^|\/)components?\//i.test(f.path) || /^[A-Z][A-Za-z0-9]*$/.test(base);
+      return COMPONENT_DIRS.test(f.path) || /^[A-Z][A-Za-z0-9]*$/.test(base);
     })
     .map((f) => f.path)
     .sort();
+}
+
+const UI_FRAMEWORKS = new Set<Framework>(["Next.js", "Nuxt", "Astro", "Vue", "Svelte", "React", "Plain HTML"]);
+/** `apps/web/package.json` or `packages/ui/package.json` — never deeper. */
+const MAX_WORKSPACE_DEPTH = 3;
+
+const depsOf = (pkg: Record<string, unknown> | null): string[] =>
+  pkg ? [...Object.keys((pkg.dependencies as object) ?? {}), ...Object.keys((pkg.devDependencies as object) ?? {})] : [];
+
+/** True for npm/yarn/bun workspaces, pnpm workspaces, Turborepo and Lerna roots. */
+async function isWorkspaceRoot(root: string, pkg: Record<string, unknown> | null): Promise<boolean> {
+  if (pkg && pkg.workspaces) return true;
+  for (const marker of ["pnpm-workspace.yaml", "turbo.json", "lerna.json", "nx.json"]) {
+    if (await exists(path.join(root, marker))) return true;
+  }
+  return false;
+}
+
+/** The files inside `dir`, with paths made relative to it. */
+function filesUnder(files: FileInfo[], dir: string): FileInfo[] {
+  const prefix = dir + "/";
+  return files.filter((f) => f.path.startsWith(prefix)).map((f) => ({ ...f, path: f.path.slice(prefix.length) }));
+}
+
+/**
+ * Packages of a monorepo. A workspace root's own package.json usually lists
+ * only tooling, so reading it alone reported "Node, 0 routes" for repos whose
+ * real app lives in `apps/web`. Each package is analyzed against its own files.
+ */
+interface DetectedWorkspace {
+  workspace: Workspace;
+  /** Files of this package, paths relative to its directory. */
+  files: FileInfo[];
+  runtimeDeps: string[];
+}
+
+async function detectWorkspaces(root: string, files: FileInfo[], pkg: Record<string, unknown> | null): Promise<DetectedWorkspace[]> {
+  if (!(await isWorkspaceRoot(root, pkg))) return [];
+  const dirs = files
+    .filter((f) => f.path.endsWith("/package.json"))
+    .map((f) => f.path.slice(0, -"/package.json".length))
+    .filter((dir) => dir.split("/").length <= MAX_WORKSPACE_DEPTH - 1 && !isFixturePath(dir + "/"));
+
+  const out: DetectedWorkspace[] = [];
+  for (const dir of dirs.sort()) {
+    const wsPkg = await readPackageJson(path.join(root, dir));
+    const wsFiles = filesUnder(files, dir);
+    const deps = depsOf(wsPkg);
+    const runtimeDeps = Object.keys((wsPkg?.dependencies as object) ?? {});
+    out.push({
+      workspace: {
+        path: dir,
+        name: typeof wsPkg?.name === "string" ? wsPkg.name : undefined,
+        framework: detectFramework(deps, wsFiles),
+        routes: detectRoutes(wsFiles).length,
+        // Full paths: the package directory itself (`packages/ui/`) is often the only component signal.
+        components: detectComponents(files.filter((f) => f.path.startsWith(dir + "/"))).length,
+      },
+      files: wsFiles,
+      runtimeDeps,
+    });
+  }
+  return out;
+}
+
+/**
+ * The app that should describe a monorepo: a UI framework package, preferring
+ * the one with the most routes, then one under `apps/`, then the largest.
+ */
+function pickPrimary(workspaces: DetectedWorkspace[]): DetectedWorkspace | undefined {
+  return workspaces
+    .filter((w) => UI_FRAMEWORKS.has(w.workspace.framework) && w.workspace.framework !== "Plain HTML")
+    .sort((a, b) =>
+      b.workspace.routes - a.workspace.routes ||
+      Number(b.workspace.path.startsWith("apps/")) - Number(a.workspace.path.startsWith("apps/")) ||
+      b.files.length - a.files.length,
+    )[0];
 }
 
 /** Scan a repository and build a structured intelligence map (v0.1). */
@@ -184,8 +272,21 @@ export async function scanRepo(root: string): Promise<RepoMap> {
   }
 
   const pkg = await readPackageJson(absRoot);
-  const dependencies = pkg ? Object.keys((pkg.dependencies as object) ?? {}) : [];
+  let dependencies = pkg ? Object.keys((pkg.dependencies as object) ?? {}) : [];
   const devDependencies = pkg ? Object.keys((pkg.devDependencies as object) ?? {}) : [];
+
+  // Monorepo: when the root is only tooling, describe the repo by its main app.
+  const workspaces = await detectWorkspaces(absRoot, files, pkg);
+  let framework = detectFramework(dependencies, files);
+  let routes = detectRoutes(files);
+  let primaryWorkspace: string | undefined;
+  const primary = !UI_FRAMEWORKS.has(framework) || framework === "Plain HTML" ? pickPrimary(workspaces) : undefined;
+  if (primary) {
+    primaryWorkspace = primary.workspace.path;
+    framework = primary.workspace.framework;
+    routes = detectRoutes(primary.files);
+    dependencies = [...new Set([...dependencies, ...primary.runtimeDeps])];
+  }
   const scripts = (pkg?.scripts as Record<string, string>) ?? {};
 
   const entryPoints: string[] = [];
@@ -225,19 +326,20 @@ export async function scanRepo(root: string): Promise<RepoMap> {
     fileCount: files.length,
     totalBytes,
     totalLines,
-    framework: detectFramework(dependencies, files),
+    framework,
     languages,
     topLevelDirs,
     dependencies,
     devDependencies,
     scripts,
     entryPoints: [...new Set(entryPoints)],
-    routes: detectRoutes(files),
+    routes,
     components: detectComponents(files),
     styles,
     configFiles,
     importantFiles,
     conventions,
+    ...(workspaces.length ? { workspaces: workspaces.map((w) => w.workspace), primaryWorkspace } : {}),
     files,
   };
   return RepoMapSchema.parse(map);

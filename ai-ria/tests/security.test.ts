@@ -42,6 +42,27 @@ describe("scanContent", () => {
     expect(scanContent("supabase-schema.sql", schema)).toHaveLength(0);
   });
 
+  it("does not flag local dev credentials or local http URLs", () => {
+    const hint = `const HINT = "Use mysql://root:@localhost:3306/app or http://root:password@localhost:3900/app";`;
+    expect(scanContent("assert-db.ts", hint).some((f) => f.rule === "connection-string-credentials")).toBe(false);
+    expect(scanContent("db.ts", `const u = "postgres://dev:dev@127.0.0.1:5432/app";`)
+      .some((f) => f.rule === "connection-string-credentials")).toBe(false);
+    expect(scanContent("api.ts", `const u = "http://api.localhost:8888/v1";`)
+      .some((f) => f.rule === "insecure-http-url")).toBe(false);
+  });
+
+  it("does not treat XML namespaces as insecure URLs", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" />`;
+    expect(scanContent("icon.tsx", svg)).toHaveLength(0);
+  });
+
+  it("still flags remote http URLs and remote credentials", () => {
+    expect(scanContent("a.ts", `fetch("http://api.example.com/items")`)
+      .some((f) => f.rule === "insecure-http-url")).toBe(true);
+    expect(scanContent("a.ts", `const u = "postgres://admin:hunter2@localhost.evil.com/app";`)
+      .some((f) => f.rule === "connection-string-credentials")).toBe(true);
+  });
+
   it("does not flag credential-free URLs", () => {
     expect(scanContent("a.ts", `const u = "https://api.example.com/v1/items";`)
       .some((f) => f.rule === "connection-string-credentials")).toBe(false);
@@ -75,7 +96,8 @@ describe("scanSecurity (v0.3, demo-app)", () => {
 
 describe("fixture noise suppression", () => {
   it("excludes test, example and fixture paths by default", () => {
-    for (const p of ["tests/security.test.ts", "examples/demo-app/scripts/deploy.sh", "src/x.spec.ts", "__mocks__/db.ts", "vendor/lib.js"]) {
+    for (const p of ["tests/security.test.ts", "examples/demo-app/scripts/deploy.sh", "src/x.spec.ts", "__mocks__/db.ts", "vendor/lib.js",
+      "apps/web/playwright/workspaces/auth.setup.ts", "e2e/login.ts", "cypress/support/commands.ts"]) {
       expect(isExcludedPath(p)).toBe(true);
     }
     for (const p of ["src/config.ts", "scripts/deploy.sh", "app/routes.js"]) {

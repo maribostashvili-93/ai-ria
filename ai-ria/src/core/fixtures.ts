@@ -8,6 +8,8 @@
  */
 export const FIXTURE_PATHS: RegExp[] = [
   /(^|\/)(tests?|__tests__|__mocks__|mocks|fixtures|__fixtures__|examples?|samples?|demo|demos)\//i,
+  // End-to-end suites: seeded test users, local database URLs, throwaway passwords.
+  /(^|\/)(e2e|playwright|cypress)\//i,
   /\.(test|spec)\.[cm]?[jt]sx?$/i,
   /(^|\/)(vendor|third[-_]party)\//i,
 ];
