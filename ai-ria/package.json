@@ -1,6 +1,6 @@
 {
   "name": "ai-ria",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agent Intelligence Layer for AI coding agents: context compression, layered memory, agent handoff, Figma bridge and security intelligence — all written to a shared .ria/ knowledge folder.",
   "type": "module",
   "license": "MIT",

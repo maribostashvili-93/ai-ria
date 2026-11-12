@@ -6,6 +6,35 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-11-13
+
+### Fixed
+
+- **Monorepos were described by their tooling root.** Run on a workspace root
+  (npm/yarn/bun `workspaces`, pnpm, Turborepo, Lerna, Nx), ai-ria read only the
+  root `package.json` and reported `Node, 0 routes` for repos whose app lives in
+  `apps/web`. Each workspace is now analyzed on its own; the repo map gains
+  `workspaces` and `primaryWorkspace`, and framework, routes and runtime
+  dependencies come from the main app. On dubinc/dub: `Node, 0 routes` →
+  `Next.js (apps/web), 456 routes`.
+- **Components outside `components/` were missed.** Kebab-case files in `ui/`
+  folders (`apps/web/ui/`, `packages/ui/`) counted as zero components. `ui/`,
+  `widgets/`, `primitives/` and `elements/` folders now count; stories, tests and
+  fixture folders do not. On dubinc/dub: 2 → 846 components.
+- **Security noise.** Inline SVG namespaces (`xmlns="http://www.w3.org/2000/svg"`)
+  were reported as insecure URLs, credentials in URLs to `localhost` were
+  reported as critical, and Playwright/Cypress/e2e suites were scanned as
+  production code. On dubinc/dub this was 382 findings, 2 of them critical/high,
+  all false; now 0. Remote `http://` URLs and remote credentials are still
+  flagged.
+- The `ria` bin path is written without a leading `./`, which npm 11 flagged
+  as invalid when publishing.
+
+## First npm release — 0.2.0 on npm (2026-11-11)
+
+The `ai-ria@0.2.0` package on npm was built from `main` on 2026-11-11 and
+already contains everything below, which had been listed as unreleased.
+
 ### Added
 
 - **Project inference.** `plan-ui` and `orchestrate` now derive the plan from
@@ -79,23 +108,6 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CI could not install: pnpm 11 requires Node >= 22.13 while the workflow pinned
   Node 20 to match `engines`. Now installs with pnpm 10 and runs the full verify
   across a Node 20 + 22 matrix, so the declared minimum is actually tested.
-- **Monorepos were described by their tooling root.** Run on a workspace root
-  (npm/yarn/bun `workspaces`, pnpm, Turborepo, Lerna, Nx), ai-ria read only the
-  root `package.json` and reported `Node, 0 routes` for repos whose app lives in
-  `apps/web`. Each workspace is now analyzed on its own; the repo map gains
-  `workspaces` and `primaryWorkspace`, and framework, routes and runtime
-  dependencies come from the main app. On dubinc/dub: `Node, 0 routes` →
-  `Next.js (apps/web), 456 routes`.
-- **Components outside `components/` were missed.** Kebab-case files in `ui/`
-  folders (`apps/web/ui/`, `packages/ui/`) counted as zero components. `ui/`,
-  `widgets/`, `primitives/` and `elements/` folders now count; stories, tests and
-  fixture folders do not. On dubinc/dub: 2 → 846 components.
-- **Security noise.** Inline SVG namespaces (`xmlns="http://www.w3.org/2000/svg"`)
-  were reported as insecure URLs, credentials in URLs to `localhost` were
-  reported as critical, and Playwright/Cypress/e2e suites were scanned as
-  production code. On dubinc/dub this was 382 findings, 2 of them critical/high,
-  all false; now 0. Remote `http://` URLs and remote credentials are still
-  flagged.
 
 ## [0.2.0] — 2026-07-29
 
