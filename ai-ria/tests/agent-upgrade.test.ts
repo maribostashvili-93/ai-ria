@@ -111,4 +111,26 @@ describe("agent intelligence upgrade commands", () => {
     await expect(fs.readFile(path.join(project, ".ria", "agent-pack", "AGENT_PACK.md"), "utf8")).resolves.toContain("Preserve role-based routing");
     await expect(fs.readFile(path.join(project, ".ria", "context", "token-report.json"), "utf8")).resolves.toContain("\"rawTokens\"");
   });
+
+  it("writes a budgeted brief pack and prints it for hooks", async () => {
+    const project = await makeProjectCopy();
+    await runCli(["analyze", project]);
+    await runCli(["handoff", "create", project, "--task", "Checkout cleanup", "--agent", "claude"]);
+
+    const report = await runCli(["agent-pack", project, "--max-chars", "1500"]);
+    expect(report).toMatch(/brief: \d+\/1500 characters/);
+    const brief = await fs.readFile(path.join(project, ".ria", "agent-pack", "AGENT_PACK_BRIEF.md"), "utf8");
+    expect(brief.length).toBeLessThanOrEqual(1500);
+    expect(brief).toContain("AGENT PACK (brief)");
+
+    const printed = await runCli(["agent-pack", project, "--max-chars", "1500", "--print"]);
+    const rewritten = await fs.readFile(path.join(project, ".ria", "agent-pack", "AGENT_PACK_BRIEF.md"), "utf8");
+    expect(printed.trim()).toBe(rewritten.trim());
+    expect(printed).not.toContain("wrote");
+  });
+
+  it("rejects a budget too small to be useful", async () => {
+    const project = await makeProjectCopy();
+    await expect(runCli(["agent-pack", project, "--max-chars", "50"])).rejects.toThrow(/at least 1000/);
+  });
 });

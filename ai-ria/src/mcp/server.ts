@@ -16,6 +16,7 @@ import { compressMemories } from "../memory/memory-compressor.js";
 import { buildMemoryGraph, graphToMermaid } from "../memory/memory-graph.js";
 import { createHandoff, loadHandoff, handoffToMarkdown } from "../memory/memory-handoff.js";
 import { loadMemories } from "../memory/memory-store.js";
+import { VERSION } from "../core/version.js";
 
 const text = (s: string) => ({ content: [{ type: "text" as const, text: s }] });
 const json = (v: unknown) => text(JSON.stringify(v, null, 2));
@@ -229,7 +230,7 @@ export const MCP_TOOL_REGISTRY: ReadonlyArray<{ name: string; register: ToolRegi
  * Tool names use underscores (MCP naming rules): repo.scan -> repo_scan.
  */
 export function createServer(): McpServer {
-  const server = new McpServer({ name: "ai-ria", version: "0.2.0" });
+  const server = new McpServer({ name: "ai-ria", version: VERSION });
   for (const tool of MCP_TOOL_REGISTRY) tool.register(server);
   return server;
 }

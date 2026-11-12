@@ -23,6 +23,20 @@ describe("compressRepoMap", () => {
     expect(ctx.tokenEstimate).toBeLessThan(ctx.originalTokenEstimate);
     expect(ctx.compressionRatio).toBeLessThan(1);
   });
+
+  it("caps long route and dependency lists instead of listing hundreds", async () => {
+    const map = await scanRepo(SAMPLE);
+    map.routes = Array.from({ length: 456 }, (_, i) => `/page-${i}`);
+    map.dependencies = Array.from({ length: 120 }, (_, i) => `dep-${i}`);
+    const ctx = compressRepoMap(map);
+    const routesLine = ctx.summary.split("\n").find((l) => l.startsWith("Routes")) ?? "";
+    expect(routesLine).toContain("Routes (456):");
+    expect(routesLine).toContain("/page-39");
+    expect(routesLine).not.toContain("/page-40,");
+    expect(routesLine).toContain("+416 more in .ria/repo-map.json");
+    expect(routesLine.length).toBeLessThan(800);
+    expect(ctx.summary).toContain("+90 more");
+  });
 });
 
 describe("buildContextPack (v0.1)", () => {

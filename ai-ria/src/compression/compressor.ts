@@ -28,6 +28,20 @@ function topEntries(record: Record<string, number>, n: number): [string, number]
   return Object.entries(record).sort((a, b) => b[1] - a[1]).slice(0, n);
 }
 
+/** Routes and dependencies listed before the rest are summarized as a count. */
+const MAX_LISTED_ROUTES = 40;
+const MAX_LISTED_DEPS = 30;
+
+/**
+ * `a, b, c, … (+N more in .ria/repo-map.json)`. A summary line holding all 456
+ * routes of a large Next.js app ran to 8,600 characters and crowded everything
+ * else out of size-limited packs; the full lists stay in the repo map.
+ */
+function listCapped(items: string[], max: number): string {
+  if (items.length <= max) return items.join(", ");
+  return `${items.slice(0, max).join(", ")}, … (+${items.length - max} more in .ria/repo-map.json)`;
+}
+
 /** Compress a repo map into a one-screen summary block. */
 export function compressRepoMap(map: RepoMap): CompressedContext {
   const lines: string[] = [];
@@ -43,10 +57,10 @@ export function compressRepoMap(map: RepoMap): CompressedContext {
   const dirs = topEntries(map.topLevelDirs, 8).map(([d, c]) => `${d} ${c}`).join(", ");
   if (dirs) lines.push(`Layout: ${dirs}.`);
   if (map.entryPoints.length) lines.push(`Entry points: ${map.entryPoints.join(", ")}.`);
-  if (map.routes.length) lines.push(`Routes: ${map.routes.map((r) => r || "/").join(", ")}.`);
+  if (map.routes.length) lines.push(`Routes (${map.routes.length}): ${listCapped(map.routes.map((r) => r || "/"), MAX_LISTED_ROUTES)}.`);
   if (map.components.length) lines.push(`Components: ${map.components.length} (${map.components.slice(0, 8).join(", ")}${map.components.length > 8 ? ", …" : ""}).`);
-  if (map.dependencies.length) lines.push(`Deps: ${map.dependencies.join(", ")}.`);
-  if (map.devDependencies.length) lines.push(`Dev deps: ${map.devDependencies.join(", ")}.`);
+  if (map.dependencies.length) lines.push(`Deps: ${listCapped(map.dependencies, MAX_LISTED_DEPS)}.`);
+  if (map.devDependencies.length) lines.push(`Dev deps: ${listCapped(map.devDependencies, MAX_LISTED_DEPS)}.`);
 
   const c = map.conventions;
   const conv: string[] = [c.usesTypeScript ? "TypeScript" : "JavaScript"];

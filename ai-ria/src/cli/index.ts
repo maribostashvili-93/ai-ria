@@ -339,9 +339,28 @@ program
   .command("agent-pack")
   .description("THE file the next agent reads -> .ria/agent-pack/AGENT_PACK.md (+ agent-pack.json)")
   .argument("[path]", "repository path", ".")
-  .action(async (path: string) => {
-    const { data, files } = await buildAgentPack(path);
+  .option("--max-chars <n>", "also write AGENT_PACK_BRIEF.md fitted to n characters (Claude Code SessionStart context: 10000)")
+  .option("--print", "print the pack (the brief one with --max-chars) to stdout and nothing else - for hooks")
+  .action(async (path: string, opts: { maxChars?: string; print?: boolean }) => {
+    let maxChars: number | undefined;
+    if (opts.maxChars !== undefined) {
+      maxChars = Number(opts.maxChars);
+      if (!Number.isInteger(maxChars) || maxChars < 1000) {
+        console.error(`--max-chars must be an integer of at least 1000 (got "${opts.maxChars}")`);
+        process.exitCode = 1;
+        return;
+      }
+    }
+    const { data, files, markdown, brief } = await buildAgentPack(path, { maxChars });
+    if (opts.print) {
+      process.stdout.write(brief ? brief.markdown : markdown);
+      return;
+    }
     done(files, `  ~${data.tokens} tokens, ${data.sections.length} sections${data.missing.length ? `, missing: ${data.missing.length} input(s)` : ""}`);
+    if (brief) {
+      const cut = [...brief.truncated.map((s) => `${s} (shortened)`), ...brief.dropped.map((s) => `${s} (left out)`)];
+      console.log(`  brief: ${brief.markdown.length}/${maxChars} characters${cut.length ? `; ${cut.join(", ")}` : ""}`);
+    }
     for (const m of data.missing) console.log(`  missing: ${m}`);
   });
 
